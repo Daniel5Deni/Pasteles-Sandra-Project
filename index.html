@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pasteles Sandra – Sistema de Pedidos</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Remix Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
+
+  <!-- Firebase SDK v10 (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ══════════════════════════════════
+       TOAST NOTIFICATIONS
+  ══════════════════════════════════ -->
+  <div id="toast-container" aria-live="polite"></div>
+
+  <!-- ══════════════════════════════════
+       LOADING OVERLAY
+  ══════════════════════════════════ -->
+  <div id="loader" class="loader-overlay">
+    <div class="loader-box">
+      <div class="spinner"></div>
+      <span>Conectando…</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       HEADER
+  ══════════════════════════════════ -->
+  <header class="site-header">
+    <div class="header-inner">
+
+      <!-- Logo (basado en el logo circular de la imagen) -->
+      <div class="logo">
+        <div class="logo-badge">
+          <i class="ri-cake-3-fill"></i>
+        </div>
+        <div class="logo-text">
+          <span class="logo-brand">Pasteles Sandra</span>
+          <span class="logo-slogan">Sabor, color y calidad</span>
+        </div>
+      </div>
+
+      <!-- Desktop nav -->
+      <nav class="desktop-nav" id="desktop-nav">
+        <button class="nav-btn active" data-section="dashboard">
+          <i class="ri-dashboard-3-line"></i><span>Dashboard</span>
+        </button>
+        <button class="nav-btn" data-section="pedidos">
+          <i class="ri-file-list-3-line"></i><span>Pedidos</span>
+        </button>
+        <button class="nav-btn" data-section="catalogo">
+          <i class="ri-store-2-line"></i><span>Catálogo</span>
+        </button>
+        <button class="nav-btn" data-section="historial">
+          <i class="ri-history-line"></i><span>Historial</span>
+        </button>
+      </nav>
+
+      <!-- Hamburger -->
+      <button class="hamburger" id="hamburger" aria-label="Menú">
+        <i class="ri-menu-3-line"></i>
+      </button>
+    </div>
+
+    <!-- Mobile nav drawer -->
+    <nav class="mobile-nav" id="mobile-nav">
+      <button class="nav-btn active" data-section="dashboard">
+        <i class="ri-dashboard-3-line"></i> Dashboard
+      </button>
+      <button class="nav-btn" data-section="pedidos">
+        <i class="ri-file-list-3-line"></i> Pedidos
+      </button>
+      <button class="nav-btn" data-section="catalogo">
+        <i class="ri-store-2-line"></i> Catálogo
+      </button>
+      <button class="nav-btn" data-section="historial">
+        <i class="ri-history-line"></i> Historial
+      </button>
+    </nav>
+  </header>
+
+  <!-- ══════════════════════════════════
+       BANNER (estilo flyer de la imagen)
+  ══════════════════════════════════ -->
+  <div class="page-banner">
+    <div class="banner-inner">
+      <i class="ri-heart-fill banner-heart left"></i>
+      <span>¡Seguimos horneando tus momentos favoritos!</span>
+      <i class="ri-heart-fill banner-heart right"></i>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       MAIN
+  ══════════════════════════════════ -->
+  <main class="main-content">
+
+    <!-- ─── DASHBOARD ─── -->
+    <section id="section-dashboard" class="section active">
+      <div class="section-header">
+        <h1><i class="ri-dashboard-3-line"></i> Dashboard</h1>
+        <p class="section-sub">Resumen en tiempo real de tu pastelería</p>
+      </div>
+
+      <!-- Tarjetas de estadísticas -->
+      <div class="stats-grid">
+        <div class="stat-card s-total">
+          <div class="stat-icon"><i class="ri-file-list-3-line"></i></div>
+          <div>
+            <div class="stat-value" id="stat-total">0</div>
+            <div class="stat-label">Total Pedidos</div>
+          </div>
+        </div>
+        <div class="stat-card s-pending">
+          <div class="stat-icon"><i class="ri-time-line"></i></div>
+          <div>
+            <div class="stat-value" id="stat-pending">0</div>
+            <div class="stat-label">Pendientes</div>
+          </div>
+        </div>
+        <div class="stat-card s-ready">
+          <div class="stat-icon"><i class="ri-checkbox-circle-line"></i></div>
+          <div>
+            <div class="stat-value" id="stat-ready">0</div>
+            <div class="stat-label">Listos</div>
+          </div>
+        </div>
+        <div class="stat-card s-delivered">
+          <div class="stat-icon"><i class="ri-truck-line"></i></div>
+          <div>
+            <div class="stat-value" id="stat-delivered">0</div>
+            <div class="stat-label">Entregados</div>
+          </div>
+        </div>
+        <div class="stat-card s-sales">
+          <div class="stat-icon"><i class="ri-money-dollar-circle-line"></i></div>
+          <div>
+            <div class="stat-value" id="stat-sales">Q0.00</div>
+            <div class="stat-label">Ventas Estimadas</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kanban rápido por estado -->
+      <h2 class="sub-title"><i class="ri-layout-column-line"></i> Pedidos por Estado</h2>
+      <div class="kanban-grid">
+        <div class="kanban-col">
+          <div class="kanban-head kh-pending"><i class="ri-time-line"></i> Pendientes</div>
+          <div class="kanban-body" id="k-pending"></div>
+        </div>
+        <div class="kanban-col">
+          <div class="kanban-head kh-prep"><i class="ri-fire-line"></i> En Preparación</div>
+          <div class="kanban-body" id="k-prep"></div>
+        </div>
+        <div class="kanban-col">
+          <div class="kanban-head kh-ready"><i class="ri-checkbox-circle-line"></i> Listos</div>
+          <div class="kanban-body" id="k-ready"></div>
+        </div>
+        <div class="kanban-col">
+          <div class="kanban-head kh-delivered"><i class="ri-truck-line"></i> Entregados</div>
+          <div class="kanban-body" id="k-delivered"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── PEDIDOS ─── -->
+    <section id="section-pedidos" class="section">
+      <div class="section-header">
+        <h1><i class="ri-file-list-3-line"></i> Pedidos</h1>
+        <p class="section-sub">Gestiona todos los pedidos de tus clientes</p>
+      </div>
+      <button class="btn btn-primary mb-20" id="btn-new-order">
+        <i class="ri-add-circle-line"></i> Nuevo Pedido
+      </button>
+      <div id="order-list" class="card-list">
+        <div class="empty-state" id="orders-empty">
+          <i class="ri-cake-3-line"></i>
+          <p>Aún no hay pedidos. ¡Agrega el primero!</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── CATÁLOGO ─── -->
+    <section id="section-catalogo" class="section">
+      <div class="section-header">
+        <h1><i class="ri-store-2-line"></i> Catálogo</h1>
+        <p class="section-sub">Administra tu menú de pasteles y postres</p>
+      </div>
+      <button class="btn btn-primary mb-20" id="btn-new-product">
+        <i class="ri-add-circle-line"></i> Agregar Producto
+      </button>
+      <div class="filter-bar" id="cat-filter">
+        <button class="filter-btn active" data-cat="all">Todos</button>
+      </div>
+      <div id="product-grid" class="product-grid">
+        <div class="empty-state" id="products-empty">
+          <i class="ri-store-2-line"></i>
+          <p>Sin productos. ¡Agrega el primero!</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── HISTORIAL ─── -->
+    <section id="section-historial" class="section">
+      <div class="section-header">
+        <h1><i class="ri-history-line"></i> Historial</h1>
+        <p class="section-sub">Registro de pedidos entregados</p>
+      </div>
+      <div class="search-bar">
+        <div class="search-wrap">
+          <i class="ri-user-search-line"></i>
+          <input type="text" id="hist-name" placeholder="Buscar cliente…" />
+        </div>
+        <div class="search-wrap">
+          <i class="ri-calendar-line"></i>
+          <input type="date" id="hist-date" />
+        </div>
+        <button class="btn btn-outline" id="btn-clear-hist">
+          <i class="ri-close-line"></i> Limpiar
+        </button>
+      </div>
+      <div id="history-list" class="card-list">
+        <div class="empty-state" id="history-empty">
+          <i class="ri-history-line"></i>
+          <p>No hay pedidos entregados aún.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ══════════════════════════════════
+       MODAL: PEDIDO
+  ══════════════════════════════════ -->
+  <div class="modal-overlay" id="modal-order">
+    <div class="modal">
+      <div class="modal-head">
+        <h2 id="modal-order-title"><i class="ri-file-add-line"></i> Nuevo Pedido</h2>
+        <button class="modal-x" data-close="modal-order"><i class="ri-close-line"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="order-form" novalidate>
+          <input type="hidden" id="order-id" />
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="o-cliente"><i class="ri-user-line"></i> Cliente *</label>
+              <input type="text" id="o-cliente" placeholder="María López" required />
+            </div>
+            <div class="form-group">
+              <label for="o-tel"><i class="ri-phone-line"></i> Teléfono *</label>
+              <input type="tel" id="o-tel" placeholder="+502 5555-0000" required />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="o-producto"><i class="ri-cake-3-line"></i> Producto *</label>
+              <select id="o-producto" required>
+                <option value="">– Selecciona –</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="o-cantidad"><i class="ri-number-9"></i> Cantidad *</label>
+              <input type="number" id="o-cantidad" min="1" value="1" required />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="o-fecha"><i class="ri-calendar-line"></i> Fecha entrega *</label>
+              <input type="date" id="o-fecha" required />
+            </div>
+            <div class="form-group">
+              <label for="o-hora"><i class="ri-time-line"></i> Hora entrega *</label>
+              <input type="time" id="o-hora" required />
+            </div>
+          </div>
+
+          <div class="form-group full">
+            <label for="o-obs"><i class="ri-sticky-note-line"></i> Observaciones</label>
+            <textarea id="o-obs" rows="3" placeholder="Decoración, mensaje, sabores especiales…"></textarea>
+          </div>
+
+          <div class="form-group full">
+            <label for="o-estado"><i class="ri-flag-line"></i> Estado</label>
+            <select id="o-estado">
+              <option value="pendiente">⏳ Pendiente</option>
+              <option value="preparacion">🔥 En Preparación</option>
+              <option value="listo">✅ Listo</option>
+              <option value="entregado">🚚 Entregado</option>
+            </select>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-outline" data-close="modal-order">Cancelar</button>
+            <button type="submit" class="btn btn-primary">
+              <i class="ri-save-line"></i> Guardar Pedido
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       MODAL: PRODUCTO
+  ══════════════════════════════════ -->
+  <div class="modal-overlay" id="modal-product">
+    <div class="modal">
+      <div class="modal-head">
+        <h2 id="modal-product-title"><i class="ri-add-box-line"></i> Nuevo Producto</h2>
+        <button class="modal-x" data-close="modal-product"><i class="ri-close-line"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="product-form" novalidate>
+          <input type="hidden" id="product-id" />
+          <div class="form-row">
+            <div class="form-group">
+              <label for="p-nombre"><i class="ri-cake-3-line"></i> Nombre *</label>
+              <input type="text" id="p-nombre" placeholder="Pastel de Fresa" required />
+            </div>
+            <div class="form-group">
+              <label for="p-precio"><i class="ri-price-tag-3-line"></i> Precio (Q) *</label>
+              <input type="number" id="p-precio" min="0" step="0.01" placeholder="150.00" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="p-cat"><i class="ri-folder-line"></i> Categoría *</label>
+              <input type="text" id="p-cat" placeholder="Pasteles, Cupcakes…" required list="cat-datalist" />
+              <datalist id="cat-datalist"></datalist>
+            </div>
+            <div class="form-group">
+              <label for="p-img"><i class="ri-image-line"></i> URL Imagen (opcional)</label>
+              <input type="url" id="p-img" placeholder="https://…" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-outline" data-close="modal-product">Cancelar</button>
+            <button type="submit" class="btn btn-primary">
+              <i class="ri-save-line"></i> Guardar Producto
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       MODAL: CONFIRMAR ELIMINACIÓN
+  ══════════════════════════════════ -->
+  <div class="modal-overlay" id="modal-confirm">
+    <div class="modal modal-sm">
+      <div class="modal-head modal-head-danger">
+        <h2><i class="ri-error-warning-line"></i> Confirmar</h2>
+        <button class="modal-x" data-close="modal-confirm"><i class="ri-close-line"></i></button>
+      </div>
+      <div class="modal-body">
+        <p id="confirm-msg">¿Segura que deseas eliminar este elemento?</p>
+        <div class="form-actions mt-16">
+          <button class="btn btn-outline" data-close="modal-confirm">Cancelar</button>
+          <button class="btn btn-danger" id="confirm-ok">
+            <i class="ri-delete-bin-line"></i> Sí, eliminar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
